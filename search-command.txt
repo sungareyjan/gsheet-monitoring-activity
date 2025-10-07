@@ -25,3 +25,7 @@
     "Search Not Found"
   )
 )
+
+
+
+=searchWithColor(C3, C4, C6)

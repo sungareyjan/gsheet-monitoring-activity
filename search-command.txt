@@ -1,0 +1,27 @@
+=IF(
+  AND(ISBLANK(C3), ISBLANK(C4), ISBLANK(C6)),
+  "",
+  IFERROR(
+    FILTER(
+      Activity!A3:P,
+      (Activity!A3:A <= C4) *
+      (Activity!C3:C >= C3) *
+      (
+        IF(
+          ISBLANK(C6),
+          TRUE,
+          ISNUMBER(
+            SEARCH(
+              LOWER(C6),
+              BYROW(
+                Activity!A3:P,
+                LAMBDA(r, TEXTJOIN(" ", 1, LOWER(r)))
+              )
+            )
+          )
+        )
+      )
+    ),
+    "Search Not Found"
+  )
+)

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Activity Form</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background: #f8f9fa; }
+    .card { box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    #msg { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="col-12 col-md-8 col-lg-6">
+      <div class="card p-4">
+        <h3 class="text-center mb-4">Activity Form</h3>
+
+        <form id="activityForm" novalidate>
+          <!-- Date & Time Row 1 -->
+          <div class="row mb-3">
+            <div class="col">
+              <label for="dateStart" class="form-label">Date Start</label>
+              <input type="date" id="dateStart" name="dateStart" class="form-control"  required>
+              <div class="invalid-feedback">Please select a start date.</div>
+            </div>
+            <div class="col">
+              <label for="timeStart" class="form-label">Time Start</label>
+              <input type="time" id="timeStart" name="timeStart" class="form-control" required>
+              <div class="invalid-feedback">Please select a start time.</div>
+            </div>
+          </div>
+
+          <!-- Date & Time Row 2 -->
+          <div class="row mb-3">
+            <div class="col">
+              <label for="dateEnd" class="form-label">Date End</label>
+              <input type="date" id="dateEnd" name="dateEnd" class="form-control" required>
+              
+              <div class="invalid-feedback">Please select an end date.</div>
+            </div>
+            <div class="col">
+              <label for="timeEnd" class="form-label">Time End</label>
+              <input type="time" id="timeEnd" name="timeEnd" class="form-control" required>
+              <div class="invalid-feedback">Please select an end time.</div>
+            </div>
+          </div>
+
+          <!-- Title -->
+          <div class="mb-3">
+            <label for="title" class="form-label">Activity Title</label>
+            <input type="text" id="title" name="title" class="form-control text-capitalize" placeholder="Enter activity title" required>
+            <div class="invalid-feedback">Activity title is required.</div>
+          </div>
+
+          <!-- Participants as Textarea -->
+          <div class="mb-3">
+            <label for="targetParticipants" class="form-label">Target Participants</label>
+            <textarea id="targetParticipants" name="targetParticipants" class="form-control text-capitalize" rows="2" placeholder="e.g., RICE, PMED" required></textarea>
+          </div>
+
+          <!-- Office Facilitator as Dropdown -->
+          <div class="mb-3">
+            <label for="officeFacilitator" class="form-label">Office Facilitator</label>
+            <select id="officeFacilitator" name="officeFacilitator" class="form-select" required>
+              <option value="">-- Select Division --</option>
+            </select>
+            <div class="invalid-feedback">Please select an office facilitator.</div>
+          </div>
+
+          <!-- Remarks -->
+          <div class="mb-3">
+            <label for="remarks" class="form-label">Remarks</label>
+            <textarea id="remarks" name="remarks" class="form-control text-capitalize" rows="3" placeholder="Any remarks..." required></textarea>
+          </div>
+
+          <!-- Link -->
+          <div class="mb-3">
+            <label for="link" class="form-label">Link</label>
+            <input type="url" id="link" name="link" class="form-control" placeholder="Meeting link or resource URL" required>
+                 <div class="invalid-feedback">Link is required.</div>
+          </div>
+
+          <!-- Buttons -->
+          <div class="d-flex justify-content-between">
+            <button type="button" id="submitBtn" class="btn btn-success">💾 Save</button>
+            <button type="button" id="clearBtn" class="btn btn-danger">🧹 Clear</button>
+          </div>
+
+          <div class="note text-muted small mt-3">
+            This form will append a new row in the <strong>Activity</strong> sheet.
+          </div>
+          <div id="msg"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    google.script.run.withSuccessHandler(function(offices){
+      var select = document.getElementById("officeFacilitator");
+      select.innerHTML = '<option value="">-- Select Division --</option>';
+
+      offices.forEach(function(office){
+        var opt = document.createElement("option");
+        opt.value = office.name;
+        opt.textContent = office.name;
+        opt.dataset.color = office.color;
+        select.appendChild(opt);
+      });
+    }).getOffices();
+
+
+    // Helper: capitalize first letter of each input/textarea
+    function capitalizeFirst(str){
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    document.querySelectorAll("input[type=text], textarea").forEach(function(el){
+      el.addEventListener("blur", function(){
+        if(el.value.trim() !== ""){
+          el.value = capitalizeFirst(el.value.trim());
+        }
+      });
+    });
+
+    // Format date to MM/DD/YYYY before saving
+    function formatDate(inputDate){
+      if(!inputDate) return "";
+      var d = new Date(inputDate);
+      var month = String(d.getMonth()+1).padStart(2,'0');
+      var day = String(d.getDate()).padStart(2,'0');
+      var year = d.getFullYear();
+      return month + "/" + day + "/" + year;
+    }
+
+    // Save button
+    document.getElementById('submitBtn').addEventListener('click', function(){
+      var form = document.getElementById('activityForm');
+
+      // Bootstrap validation
+      if(!form.checkValidity()){
+        form.classList.add("was-validated");
+        return;
+      }
+
+      // var formData = {
+      //   dateStart: formatDate(form.dateStart.value),
+      //   timeStart: form.timeStart.value,
+      //   dateEnd: formatDate(form.dateEnd.value),
+      //   timeEnd: form.timeEnd.value,
+      //   title: capitalizeFirst(form.title.value),
+      //   targetParticipants: capitalizeFirst(form.targetParticipants.value),
+      //   officeFacilitator: form.officeFacilitator.value,
+      //   remarks: capitalizeFirst(form.remarks.value),
+      //   link: form.link.value,
+      //   color: form.officeFacilitator.dataset.color,
+      // };
+    
+
+    var selectedOption = form.officeFacilitator.options[form.officeFacilitator.selectedIndex];
+
+      var formData = {
+        dateStart: formatDate(form.dateStart.value),
+        timeStart: form.timeStart.value,
+        dateEnd: formatDate(form.dateEnd.value),
+        timeEnd: form.timeEnd.value,
+        title: capitalizeFirst(form.title.value),
+        targetParticipants: capitalizeFirst(form.targetParticipants.value),
+        officeFacilitator: form.officeFacilitator.value,
+        remarks: capitalizeFirst(form.remarks.value),
+        link: form.link.value,
+        color: selectedOption.dataset.color // ✅ get color from selected option
+      };
+      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('msg').innerHTML = '<div class="text-info">⏳ Saving...</div>';
+
+      google.script.run.withSuccessHandler(function(res){
+        document.getElementById('msg').innerHTML = '<div class="text-success fw-bold">✅ Saved to row ' + res.row + '</div>';
+        document.getElementById('submitBtn').disabled = false;
+        form.reset();
+        form.classList.remove("was-validated");
+      }).withFailureHandler(function(err){
+        document.getElementById('msg').innerHTML = '<div class="text-danger fw-bold">❌ Error: ' + err.message + '</div>';
+        document.getElementById('submitBtn').disabled = false;
+      }).saveToActivityFromHtml(formData);
+    });
+
+    // Clear button
+    document.getElementById('clearBtn').addEventListener('click', function(){
+      var form = document.getElementById('activityForm');
+      form.reset();
+      form.classList.remove("was-validated");
+      document.getElementById('msg').innerText = '';
+    });
+  </script>
+</body>
+</html>

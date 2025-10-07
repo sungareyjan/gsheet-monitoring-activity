@@ -237,4 +237,84 @@ function movePastActivitiesToArchive() {
 }
 
 
+function movePastActivitiesToArchive() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var activitySheet = ss.getSheetByName("Activity");
+  var archiveSheet = ss.getSheetByName("ActivityArchive");
+  if (!activitySheet || !archiveSheet) {
+    Logger.log("One or both sheets are missing.");
+    return;
+  }
 
+  var dataRange = activitySheet.getDataRange();
+  var data = dataRange.getValues();
+  var bg = dataRange.getBackgrounds(); // all background colors
+
+  if (data.length < 2) return; // only header row
+
+  var header = data[0];
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  var toKeep = [header];
+  var toArchive = [];
+  var gColorsToArchive = []; // G col colors for archive
+  var gColorsToKeep = [[bg[0][6]]]; // header G color
+
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    var dateEnd = row[2]; // column C = Date End
+
+    if (dateEnd instanceof Date && dateEnd < today) {
+      // --- Move to archive ---
+      toArchive.push(row);
+      gColorsToArchive.push([bg[i][6]]); // keep G color
+    } else {
+      // --- Keep in Activity ---
+      toKeep.push(row);
+
+      // if G has value → keep its color
+      // else → use color from column L (index 11)
+      if (String(row[6]).trim() !== "") {
+        gColorsToKeep.push([bg[i][6]]);
+      } else {
+        gColorsToKeep.push([bg[i][6]]); // take color from column L
+        console.log([bg[i][6]])
+      }
+    }
+  }
+
+  // --- Move to archive if needed ---
+  if (toArchive.length > 0) {
+    var archiveLast = archiveSheet.getLastRow();
+    var startRow = archiveLast + 1;
+
+    archiveSheet
+      .getRange(startRow, 1, toArchive.length, toArchive[0].length)
+      .setValues(toArchive);
+
+    archiveSheet
+      .getRange(startRow, 7, gColorsToArchive.length, 1)
+      .setBackgrounds(gColorsToArchive);
+  }
+
+  // --- Rewrite Activity with kept rows ---
+ var lastRow = activitySheet.getMaxRows();
+  var lastCol = activitySheet.getMaxColumns();
+
+  // Clear all contents
+  activitySheet.clearContents();
+
+  // Reset background of used area (or entire sheet)
+  activitySheet.getRange(1, 1, lastRow, lastCol).setBackground('#ffffff');
+  activitySheet
+    .getRange(1, 1, toKeep.length, toKeep[0].length)  
+    .setValues(toKeep);
+
+  // --- Restore G column colors ---
+  activitySheet
+    .getRange(1, 7, gColorsToKeep.length, 1)
+    .setBackgrounds(gColorsToKeep);
+
+  Logger.log("Moved " + toArchive.length + " rows to ActivityArchive.");
+}
